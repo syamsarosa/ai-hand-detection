@@ -28,26 +28,7 @@ from playsound import playsound
 from mysql.connector import Error
 from kalibrasi import JendelaKalibrasi
 
-# --- Konfigurasi Database & Global ---
-DB_HOST = 'localhost'
-DB_USER = 'admin'
-DB_PASSWORD = 'berdikaribisa'
-DB_NAME = 'wireselection'
-
-def get_db_connection():
-    """Membuat koneksi ke database."""
-    try:
-        connection = mysql.connector.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD
-        )
-        if connection.is_connected():
-            return connection
-    except Error as e:
-        print(f"Error saat menghubungkan ke MariaDB: {e}")
-        return None
+from database.connection import connection as get_db_connection
 
 def load_icon(path, size=(20, 20)):
     """Memuat file gambar untuk ikon."""
