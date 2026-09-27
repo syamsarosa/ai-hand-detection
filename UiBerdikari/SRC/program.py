@@ -22,7 +22,7 @@ import tkinter.messagebox as messagebox
 import cv2.aruco as aruco
 import numpy as np
 from PIL import Image, ImageTk
-from ultralytics import YOLO
+from detection.yolo_detector import YoloDetector
 import pandas as pd
 from playsound import playsound
 from mysql.connector import Error
@@ -62,7 +62,7 @@ def load_icon(path, size=(20, 20)):
 # BAGIAN B: KELAS UTAMA APLIKASI
 # =============================================================================
 class App(ctk.CTk):
-    
+
     # -------------------------------------------------------------------------
     # 1. INISIALISASI & SETUP AWAL
     # -------------------------------------------------------------------------
@@ -87,9 +87,9 @@ class App(ctk.CTk):
             self.state('zoomed')
         except Exception:
             self.attributes('-zoomed', True)
-        #self.ser = serial.Serial('/dev/tty0', baudrate=115200, timeout=0.01)
+        # self.ser = serial.Serial('/dev/tty0', baudrate=115200, timeout=0.01)
         self.is_dark_mode = False
-        #self.ser = serial.Serial('COM6', baudrate=115200, timeout=0.01)
+        # self.ser = serial.Serial('COM6', baudrate=115200, timeout=0.01)
 
         self.kalibrasi_app = None
         # System variables
@@ -100,14 +100,14 @@ class App(ctk.CTk):
         self.elapsed_time = 0
         self.camera_on = False
         self.cap = None
-      #  self.model = YOLO(r'GUI/best2.engine', task='detect')#Blue.engine
-        self.model = YOLO(r'UiBerdikari/SRC/best2.pt', task='detect')
+        #  self.model = YOLO(r'GUI/best2.engine', task='detect')#Blue.engine
+        self.model = YoloDetector(r'UiBerdikari/SRC/best2.pt', task='detect')
         self.ARUCO_DICT = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
         self.MARKER_SIZE = 5.0
         self.excel_file_path = r'/home/berdikari/HandDetection/UiBerdikari/Database/barcode_data.xlsx'
         self.excel_file_user = r'/home/berdikari/HandDetection/UiBerdikari/DataUser/data_user.xlsx'
         self.django_process = None
-        
+
         # Inisialisasi Aruco API baru
         self.ARUCO_DICT = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_16h5)#DICT_APRILTAG_36h11  #DICT_4X4_50
         self.ARUCO_PARAMETERS = cv2.aruco.DetectorParameters()
@@ -122,7 +122,7 @@ class App(ctk.CTk):
         self.ARUCO_PARAMETERS.minMarkerDistanceRate = 0.05
 
         self.ARUCO_DETECTOR = cv2.aruco.ArucoDetector(self.ARUCO_DICT, self.ARUCO_PARAMETERS)
-        
+
         # Variabel untuk logika anti-duplikat
         self.last_detected_slot = None
 
@@ -168,8 +168,8 @@ class App(ctk.CTk):
         self.max_selection_count = 0
         self.is_manual_selection_mode = False  # Flag untuk mode seleksi
         self.manual_selected_slots = []      # List untuk menyimpan slot pilihan
-        #self.current_start = 1
-        #self.current_end = 12
+        # self.current_start = 1
+        # self.current_end = 12
         self.current_group = 'A'
         self.detected_objects = set()
         self.blinking = False
@@ -282,7 +282,7 @@ class App(ctk.CTk):
 
         self.reset_btn = ctk.CTkButton(self.control_frame, text="Reset", anchor="w", image=self.reset_icon,
                                      border_color="#EBF9FF", border_width=3, compound="left", command=self.reset_system)
-        
+
         self.reset_btn.pack(fill="x", pady=5)
         self.pause_btn = ctk.CTkButton(self.control_frame, text="Pause", anchor="w", image=self.pause_icon,
                                      border_color="#EBF9FF", border_width=3, compound="left", command=self.pause_system)
@@ -572,7 +572,7 @@ class App(ctk.CTk):
         self.accumulation_entry.grid(row=9, column=0, padx=10, pady=(0, 5), sticky="ew")
 
         self.update_time()
-        
+
     def show_home(self):
         self.create_home_layout()
         self.reset_system()
@@ -586,21 +586,21 @@ class App(ctk.CTk):
 
     def show_info(self):
         self.reset_system()
-            
+
         # Hentikan update_time sebelum menghancurkan widget
         if hasattr(self, '_after_id'):
             self.after_cancel(self._after_id)
-        
+
         # Clear existing widgets
         for widget in self.main_frame.winfo_children():
             widget.destroy()
-            
+
         info_frame = ctk.CTkFrame(self.main_frame, border_color="#FFFFFF", border_width=3)
         info_frame.pack(expand=True, fill="both", padx=10, pady=10)
-        
+
         self.tabview = ctk.CTkTabview(info_frame)
         self.tabview.pack(expand=True, fill="both", padx=5, pady=5)
-        
+
         self.tabview.add("Information 1")
         self.tabview.add("Information 2") 
         self.tabview.add("Information 3")
@@ -608,7 +608,7 @@ class App(ctk.CTk):
         self.tabview.tab("Information 1").grid_columnconfigure(0, weight=1)
         self.tabview.tab("Information 2").grid_columnconfigure(0, weight=1)
         self.tabview.tab("Information 3").grid_columnconfigure(0, weight=1)
-        
+
         # Tab 1
         label1 = ctk.CTkLabel(self.tabview.tab("Information 1"), text="Otomatisasi Sistem Pemilih Kabel pada Line Produksi Otomotif Wiring System",
                             font=("Arial", 25, "bold"))
@@ -616,30 +616,30 @@ class App(ctk.CTk):
         label1 = ctk.CTkLabel(self.tabview.tab("Information 1"), text="Invensi ini merupakan sistem berbasis computer vision untuk memandu operator dalam pemilihan kabel pada proses produksi wire harness. Sistem menggunakan\nkamera dan komputer yang dilengkapi teknologi YOLO untuk mendeteksi sarung tangan operator secara real-time, serta ArUco marker untuk menentukan posisi sarung\ntangan secara presisi. Deteksi ini memverifikasi kesesuaian pengambilan kabel dengan slot yang ditentukan. Sistem juga dilengkapi pemindai barcode untuk menentukan\nslot kabel yang harus diambil sesuai perintah kerja.",
                             font=("Arial", 14))
         label1.pack(pady=20)
-        
+
         label1 = ctk.CTkLabel(self.tabview.tab("Information 1"), text="Panduan Penggunaan Alat",
                             font=("Arial", 25, "bold"))
         label1.pack(pady=20)
-        
+
         # Create horizontal frame for side-by-side images
         image_container = ctk.CTkFrame(self.tabview.tab("Information 1"), fg_color="transparent")
         image_container.pack(pady=10)
-        
+
         # First image frame
         frame_img1 = ctk.CTkFrame(image_container, fg_color="transparent")
         frame_img1.pack(side="left", padx=10, expand=True)
-        
+
         try:
             # Load and resize the first landscape image (smaller width for side-by-side)
             landscape_img1 = Image.open("UiBerdikari/SRC/Flowalat.png")
             landscape_img1 = landscape_img1.resize((680, 400), Image.LANCZOS)  # Reduced width
             landscape_photo1 = ImageTk.PhotoImage(landscape_img1)
-            
+
             # Create label for first image
             landscape_label1 = tk.Label(frame_img1, image=landscape_photo1, bg="#f0f0f0")
             landscape_label1.image = landscape_photo1
             landscape_label1.pack()
-            
+
             # Caption for first image
             caption1 = ctk.CTkLabel(frame_img1, 
                                 text="Diagram alur - Bagian 1",
@@ -650,22 +650,22 @@ class App(ctk.CTk):
             ctk.CTkLabel(frame_img1, 
                         text="[Diagram bagian 1]",
                         font=("Arial", 12, "italic")).pack()
-        
+
         # Second image frame
         frame_img2 = ctk.CTkFrame(image_container, fg_color="transparent")
         frame_img2.pack(side="left", padx=10, expand=True)
-        
+
         try:
             # Load and resize the second landscape image (same size as first)
             landscape_img2 = Image.open("UiBerdikari/SRC/Flowalat2.png")
             landscape_img2 = landscape_img2.resize((680, 400), Image.LANCZOS)  # Same dimensions
             landscape_photo2 = ImageTk.PhotoImage(landscape_img2)
-            
+
             # Create label for second image
             landscape_label2 = tk.Label(frame_img2, image=landscape_photo2, bg="#f0f0f0")
             landscape_label2.image = landscape_photo2
             landscape_label2.pack()
-            
+
             # Caption for second image
             caption2 = ctk.CTkLabel(frame_img2, 
                                 text="Diagram alur - Bagian 2",
@@ -676,7 +676,7 @@ class App(ctk.CTk):
             ctk.CTkLabel(frame_img2, 
                         text="[Diagram bagian 2]",
                         font=("Arial", 12, "italic")).pack()
-        
+
         # Rest of the code remains the same...
         # Tab 2
         label2 = ctk.CTkLabel(self.tabview.tab("Information 2"), text="Politeknik Negeri Batam",
@@ -685,7 +685,7 @@ class App(ctk.CTk):
         label2 = ctk.CTkLabel(self.tabview.tab("Information 2"), text="Politeknik Negeri Batam (Polibatam) merupakan satu-satunya Perguruan Tinggi Negeri (PTN) Vokasi di kawasan perdagangan dan pelabuhan bebas Batam, Bintan, dan\nKarimun Provinsi Kepulauan Riau. Selain terletak di salah satu kawasan pusat pertumbuhan ekonomi nasional, Polibatam juga terletak di wilayah terdepan dan terluar\nwilayah Negara Kesatuan republik Indonesia yang berbatasan langsung dengan perairan internasional.",
                             font=("Arial", 14))
         label2.pack(pady=5)
-        
+
         # Tab 3
         label3 = ctk.CTkLabel(self.tabview.tab("Information 3"), text="PT Sumitomo Wiring System Batam Indonesia (SWSBI)", 
                             font=("Arial", 25, "bold"))
@@ -693,10 +693,10 @@ class App(ctk.CTk):
         label3 = ctk.CTkLabel(self.tabview.tab("Information 3"), text="PT Sumitomo Wiring System Batam Indonesia (SWSBI) adalah perusahaan asal Jepang telah berdiri sejak tahun 1990 yang memproduksi kabel harness untuk mobil.\nKapasitas produksi wire harness 260.000 set per tahun. Sebesar 100 persen hasil produksinya diserap pasar ekspor, seperti ke Thailand, Vietnam, dan Tiongkok.", 
                             font=("Arial", 14))
         label3.pack(pady=5)
-        
+
         if hasattr(self, 'title_label'):
             del self.title_label
-        
+
     def _set_led_color(self, led, label, color):
         """
         Helper terpusat untuk mengubah warna LED. HARUS dipanggil dari main thread
@@ -810,11 +810,10 @@ class App(ctk.CTk):
                 self.wire_info_entries[2].insert(0, str(len(self.manual_selected_slots)))
                 self.wire_info_entries[2].configure(state="readonly")
 
-
                 # Panggil start_cycle untuk memulai proses
                 self.start_cycle()
             return # Hentikan fungsi di sini setelah konfirmasi
-        
+
         user_name = self.wire_info_entries[0].get().strip()
         barcode = self.wire_info_entries[1].get().strip()
 
@@ -823,13 +822,13 @@ class App(ctk.CTk):
             print(f"User changed from '{self.accumulation_user}' to '{user_name}'. Resetting accumulation.")
             self.accumulation_total = 0
             self.accumulation_user = user_name
-        
+
         # Selalu perbarui tampilan akumulasi setiap kali proses dimulai
         self.accumulation_entry.configure(state="normal")
         self.accumulation_entry.delete(0, "end")
         self.accumulation_entry.insert(0, str(self.accumulation_total))
         self.accumulation_entry.configure(state="readonly")
-        
+
         if not user_name:
             self.update_status("Please enter User name")
             return
@@ -842,7 +841,7 @@ class App(ctk.CTk):
         choice = messagebox.askquestion("Select Group", 
                                       "Please select working group:\n\n'Yes' for Group A\n'No' for Group B", 
                                       parent=self)
-        
+
         # Set group berdasarkan pilihan user
         self.current_group = 'A' if choice == 'yes' else 'B'
         self.update_status(f"Group {self.current_group} selected")
@@ -853,10 +852,10 @@ class App(ctk.CTk):
 
             df_u = pd.read_excel(self.excel_file_user)
             user_data = df_u[df_u['id_user'] == user_name]
-            
+
             # Filter rows where efu_ser_no matches the barcode
             barcode_data = df[df['efu_ser_no'] == barcode]
-            
+
             if user_data.empty:
                 self.update_status("BarcodeUser ID not found in database")
                 return
@@ -864,7 +863,7 @@ class App(ctk.CTk):
             if barcode_data.empty:
                 self.update_status("Barcode not found in database")
                 return
-                
+
             # Get required data
             prod_no = barcode_data['prod_no'].iloc[0]
             group_no = barcode_data['ckt_grp_no'].iloc[0]
@@ -878,7 +877,7 @@ class App(ctk.CTk):
             loc_cd = barcode_data['loc_cd'].iloc[0]
 
             user_n = user_data['Nama'].iloc[0]
-            
+
             # Menghitung wire_t
             lot_no_v = df[(df['prod_no'] == prod_no) & (df['ckt_grp_no'] == group_no) & 
                           (df['plan_iss_date'] == plan_iss_date) & (df['lot_no'] == lot_no)
@@ -889,25 +888,25 @@ class App(ctk.CTk):
 
             barcode_info = f"System started with barcode: {barcode}\nBarcode: {barcode}\nProduct: {prod_no}\nGroup: {group_no}\nIssue Date: {plan_iss_date}\nLot: {lot_no}\nPlan Work Order: {plan_work_order}\nWork Order No : {work_order_no}\nLine cd: {line_cd}\nLoc cd: {loc_cd}\n User ID: {user_name}\n User Name: {user_n}"
             self.add_barcode_info(barcode_info)
-            
+
             # Update current data field (wire_t)
             self.wire_info_entries[2].configure(state="normal")
             self.wire_info_entries[2].delete(0, "end")
             self.wire_info_entries[2].insert(0, "0")
             self.wire_info_entries[2].configure(state="readonly")
 
-            #total work order
+            # total work order
             self.wire_info_entries[3].configure(state="normal")
             self.wire_info_entries[3].delete(0, "end")
             self.wire_info_entries[3].insert(0, str(self.plan_work_order))
             self.wire_info_entries[3].configure(state="readonly")
-            
+
             # Update remaining field (wire_bndle_qty)
             self.wire_info_entries[4].configure(state="normal")
             self.wire_info_entries[4].delete(0, "end")
             self.wire_info_entries[4].insert(0, str(wire_bndle_qty))
             self.wire_info_entries[4].configure(state="readonly")
-            
+
             self.currently_entry.configure(state="normal")
             self.currently_entry.delete(0, "end")
             self.currently_entry.insert(0, f"0/{self.plan_work_order}")
@@ -916,7 +915,7 @@ class App(ctk.CTk):
             # Lock input fields
             self.wire_info_entries[0].configure(state="readonly")
             self.wire_info_entries[1].configure(state="readonly")
-            
+
             # Simpan data awal ke DB
             conn = get_db_connection()
             if conn is None: self.update_status("Koneksi Database Gagal!"); return
@@ -932,10 +931,10 @@ class App(ctk.CTk):
                 self.update_status(f"DB Error: {e}"); print(f"DB Error: {e}"); return
             finally:
                 if conn.is_connected(): cursor.close(); conn.close()
-            
+
             # Set the range based on wire_t (1 to wire_t)
-            #self.current_start = 1
-            #self.current_end = wire_t
+            # self.current_start = 1
+            # self.current_end = wire_t
             self.total_cycles = wire_bndle_qty
             self.current_cycle = 0
             self.counter_entry.configure(state="normal")
@@ -944,8 +943,8 @@ class App(ctk.CTk):
             self.counter_entry.configure(state="readonly")
             self.wire_info_entries[0].configure(state="readonly")
             self.wire_info_entries[1].configure(state="readonly")
-            #self.start_btn.configure(state="disabled")
-            #self.start_cycle()
+            # self.start_btn.configure(state="disabled")
+            # self.start_cycle()
             self.is_manual_selection_mode = True
             self.manual_selected_slots.clear()
             self.update_status(f"Pilih {self.max_selection_count} slot untuk Grup {self.current_group} ({len(self.manual_selected_slots)}/{self.max_selection_count})")
@@ -962,7 +961,7 @@ class App(ctk.CTk):
                 self.original_status_fg_color_selection = self.status_entry.cget("fg_color")
                 self.is_status_blinking_selection = True
                 self._blink_status_for_selection()
-            
+
         except Exception as e:
             self.update_status(f"Error: {str(e)}")
             return
@@ -978,7 +977,7 @@ class App(ctk.CTk):
             # Sekarang blok akumulasi sudah tidak ada di sini
             self.counter_entry.configure(state="normal")
         if self.current_cycle >= self.plan_work_order:
-            
+
             self.counter_entry.configure(state="normal")
             self.counter_entry.delete(0, "end")
             self.counter_entry.insert(0, "0")
@@ -1001,9 +1000,9 @@ class App(ctk.CTk):
                 if self.db_process_id:
                     self.finish_db_process()
             return
-        
+
         self.cycle_active = True
-       # self.current_cycle += 1
+        # self.current_cycle += 1
         self.update_status(f"Cycle {self.current_cycle}/{self.total_cycles} (Group {self.current_group})")
 
         # Reset LED colors for the new cycle
@@ -1034,7 +1033,7 @@ class App(ctk.CTk):
         self.home_btn.configure(state="disabled")
         self.info_btn.configure(state="disabled")
         self.start_btn.configure(state="disabled")
-        
+
     def check_cycle_completion(self):
         """
         - Mengecek apakah semua LED hijau sudah berubah menjadi merah.
@@ -1064,7 +1063,7 @@ class App(ctk.CTk):
             self.counter_entry.configure(state="readonly")
             self.add_history_message(f"✅ Siklus {self.current_cycle} selesai - {datetime.datetime.now().strftime('%H:%M:%S')}")
             self.after(1000, self.start_cycle)
-        
+
     def pause_system(self):
         """Menjeda atau melanjutkan timer dan proses."""
         if self.timer_running:
@@ -1148,23 +1147,22 @@ class App(ctk.CTk):
         self.blinking_tags.clear()
         self.reset_timer()
         self.reset_led_colors()
-        
 
         # Clear history and barcode info
         self.history_text.configure(state="normal")
         self.history_text.delete("1.0", "end")
         self.history_text.configure(state="disabled")
-        
+
         self.barcode_info_text.configure(state="normal")
         self.barcode_info_text.delete("1.0", "end")
         self.barcode_info_text.configure(state="disabled")
 
         # Reset all input fields to default
         self.wire_info_entries[0].configure(state="normal")  # User field
-        
+
         self.wire_info_entries[1].configure(state="normal")  # Barcode field
         self.wire_info_entries[1].delete(0, "end")
-        
+
         self.wire_info_entries[2].configure(state="normal")  # Current data field
         self.wire_info_entries[2].delete(0, "end")
         self.wire_info_entries[2].configure(state="readonly")
@@ -1172,7 +1170,7 @@ class App(ctk.CTk):
         self.wire_info_entries[3].configure(state="normal")
         self.wire_info_entries[3].delete(0, "end")
         self.wire_info_entries[3].configure(state="readonly")
-        
+
         self.wire_info_entries[4].configure(state="normal")  # Remaining field
         self.wire_info_entries[4].delete(0, "end")
         self.wire_info_entries[4].configure(state="readonly")
@@ -1203,20 +1201,20 @@ class App(ctk.CTk):
         self.all_wires_taken = False
         self.last_logged_error_slot = None
         self.plan_work_order = 0
-        
+
         for button in [self.start_btn, self.reset_btn, self.pause_btn, self.home_btn, 
                        self.info_btn, self.mode_btn, self.django_btn, 
                        self.complete_btn, self.camera_btn, self.delay_option_menu]:
             button.configure(state="normal")
         self.pause_btn.configure(text="Pause")
-     
+
     def complete_system(self):
         self._stop_all_blinking()
         """Dipicu tombol 'Complete', meminta konfirmasi lalu memanggil reset_system."""
         if not self.system_started:
             self.update_status("System not started")
             return
-                
+
         confirm = messagebox.askyesno("Complete System", 
                                     "Are you sure you want to complete this process?",
                                     parent=self)
@@ -1224,7 +1222,6 @@ class App(ctk.CTk):
             # Cukup panggil reset_system. Fungsi ini akan menangani penyimpanan DB dan reset UI.
             self.update_status("Proses selesai, sistem direset.")
             self.reset_system()
-            
 
     # -------------------------------------------------------------------------
     # 4. MANAJEMEN KAMERA & PEMROSESAN GAMBAR (COMPUTER VISION)
@@ -1232,9 +1229,9 @@ class App(ctk.CTk):
     def toggle_camera(self):
         """Menyalakan atau mematikan stream kamera dan thread terkait."""
         if self.camera_on:
-            
+
             self.stop_event.set()
-            
+
             if self.camera_thread and self.camera_thread.is_alive():
                 self.camera_thread.join(timeout=1.0)
             """
@@ -1280,7 +1277,7 @@ class App(ctk.CTk):
         self.camera_placeholder.pack_forget() if on else self.camera_label.pack_forget()
         self.camera_label.pack(expand=True) if on else self.camera_placeholder.pack(expand=True)
         self.update_status("Camera ON" if on else "Camera OFF")
-        
+
     def init_camera(self):
         """Inisialisasi objek VideoCapture di thread terpisah."""
         try:
@@ -1289,7 +1286,7 @@ class App(ctk.CTk):
                 self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 720) #640
                 self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480) #480
                 self.cap.set(cv2.CAP_PROP_FPS, 120)#dari 120 FPS
-                
+
                 # Update GUI dari main thread
                 self.after(0, lambda: [
                     self.set_camera_state(True),
@@ -1300,17 +1297,17 @@ class App(ctk.CTk):
                 self.after(0, lambda: self.update_status("Camera Error"))
         except Exception as e:
             self.after(0, lambda: self.update_status(f"Camera Error: {str(e)}"))
-        
+
     def start_camera_threads(self):
         """Memulai thread untuk capture_frames dan process_frames."""
         self.camera_thread = threading.Thread(target=self.capture_frames, daemon=True)
         self.camera_thread.start()
-        
+
         self.detection_thread = threading.Thread(target=self.process_frames, daemon=True)
         self.detection_thread.start()
-        
+
         self.update_camera_display()
-        
+
     def capture_frames(self):
         """Thread worker: Terus menerus mengambil frame dari kamera."""
         while not self.stop_event.is_set() and self.camera_on:
@@ -1341,7 +1338,7 @@ class App(ctk.CTk):
                     map1, map2 = cv2.fisheye.initUndistortRectifyMap(
                         K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2
                     )
-                    
+
                     # Terapkan koreksi pada frame realtime
                     frame = cv2.remap(frame, map1, map2, interpolation=cv2.INTER_LINEAR)
 
@@ -1353,19 +1350,19 @@ class App(ctk.CTk):
     def process_frames(self):
         """Thread worker: Memproses frame untuk deteksi ArUco/YOLO."""
         while not self.stop_event.is_set() and self.camera_on:
-            
+
             try:
                 frame = self.frame_queue.get(timeout=0.01)
-                
+
                 # Process frame
                 processed_frame = frame.copy()
-                
-                #self.classify_pipe(0, 0, 0, processed_frame, 0, 0, St_Aruco, self.data_) 
-                
+
+                # self.classify_pipe(0, 0, 0, processed_frame, 0, 0, St_Aruco, self.data_)
+
                 St_Aruco = 0  # initial aruco status
-                
+
                 # Process with YOLO
-                results = self.model(frame, verbose=False, conf=0.65)#0.6
+                results = self.model.predict(frame)
                 yolo_boxes = []  # list of (x1, y1, x2, y2) hasil deteksi YOLO (koordinat piksel)
                 if len(results):
                     processed_frame = results[0].plot()
@@ -1373,13 +1370,12 @@ class App(ctk.CTk):
                         for box in results[0].boxes.xyxy.cpu().numpy():
                             bx1, by1, bx2, by2 = box[:4]
                             yolo_boxes.append((float(bx1), float(by1), float(bx2), float(by2)))
-                
+
                 # Process with ArUco
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                #corners, ids, rejected = aruco.detectMarkers(gray, self.ARUCO_DICT)
+                # corners, ids, rejected = aruco.detectMarkers(gray, self.ARUCO_DICT)
                 corners, ids, rejected = self.ARUCO_DETECTOR.detectMarkers(gray)
-                
-                
+
                 if ids is not None:
                     St_Aruco = 1  # ArUco detected
                     self.classify_pipe_sensor(self.x_s, self.y_s, self.z_s, processed_frame, 0, 0, St_Aruco)
@@ -1393,16 +1389,15 @@ class App(ctk.CTk):
                             [ half_size, -half_size, 0],
                             [-half_size, -half_size, 0]
                         ], dtype=np.float32)
-                    
+
                         # Hitung pose rvec dan tvec menggunakan solvePnP
                         success, rvec, tvec = cv2.solvePnP(
                             obj_points, corner, self.camera_matrix, self.dist_coeffs, flags=cv2.SOLVEPNP_IPPE_SQUARE
                         )
-                    
+
                         if success:
                             aruco.drawDetectedMarkers(processed_frame, [corner])
                             cv2.drawFrameAxes(processed_frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 2)
-
 
                         aruco.drawDetectedMarkers(processed_frame, [corner])
                         cv2.drawFrameAxes(processed_frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 2)
@@ -1420,15 +1415,15 @@ class App(ctk.CTk):
                         text_x = max(text_x, 0)
                         cv2.putText(processed_frame, text, (text_x, text_y),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                
+
                 # Draw slot rectangles
                 for label, coord in self.slot_data.items():
                     cv2.rectangle(processed_frame, (coord["x1"], coord["y1"]), (coord["x2"], coord["y2"]),(216, 235, 255), 3)
-                
+
                 # Put processed frame in result queue
                 if self.result_queue.empty():
                     self.result_queue.put(processed_frame)
-                    
+
             except queue.Empty:
                 continue
             except Exception as e:
@@ -1444,27 +1439,25 @@ class App(ctk.CTk):
             return 1 <= num <= 999
         except ValueError:
             return False
-        
+
     def update_camera_display(self):
         """Mengambil frame dari result_queue dan menampilkannya di UI."""
         if self.camera_on: #and not self.stop_event.is_set():
             try:
                 frame = self.result_queue.get_nowait()
-                
+
                 # Convert to RGB and display
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 image = Image.fromarray(rgb_frame)
                 imgtk = ImageTk.PhotoImage(image=image)
                 self.camera_label.imgtk = imgtk
                 self.camera_label.configure(image=imgtk)
-                
-                
-                
+
             except queue.Empty:
                 pass
-            
+
             self.after(1, self.update_camera_display)
-        
+
     def _is_point_in_yolo_box(self, x_c, y_c, yolo_boxes):
         """
         Mengecek apakah titik (x_c, y_c) berada di dalam salah satu
@@ -1507,7 +1500,7 @@ class App(ctk.CTk):
         yolo_confirmed = self._is_point_in_yolo_box(x_c, y_c, yolo_boxes)
 
         for label, coord in self.slot_data.items():
-            
+
             if St_Aruco_ == 1:
                 condition = (coord["x1"] <= x <= coord["x2"] and 
                             coord["y1"] <= y <= coord["y2"] and
@@ -1522,7 +1515,7 @@ class App(ctk.CTk):
             if condition:
                 # Tampilkan label di kamera (aman: hanya menulis ke array gambar lokal)
                 cv2.putText(img, label, (x_c, y_c), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-                
+
                 # Baca status warna LED dari cache (thread-safe), bukan dari widget langsung
                 current_color = self.led_color_cache.get(label, "gray")
 
@@ -1533,17 +1526,17 @@ class App(ctk.CTk):
                 elif current_color == "gray":
                     cv2.putText(img, "TIDAK DIAMBIL/TIDAK TERSEDIA", (x_c, y_c+20),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,0,0), 1)
-                
+
                 # Jika sistem aktif dan tidak pause
                 if self.system_started and not self.timer_paused and self.cycle_active:
                     if label not in self.detected_objects:
                         self.pic_time = datetime.datetime.now()
-                        #self.add_history_message(f"waktu ambil{self.pic_time}")
+                        # self.add_history_message(f"waktu ambil{self.pic_time}")
                         self.detected_objects.add(label)
                         # Sentuhan ke widget LED -> jadwalkan ke main thread
                         self.after(0, lambda l=label: self.update_led_color(l))
-                        
-                        #print("Masuk state dtc")
+
+                        # print("Masuk state dtc")
                     else:
                         if current_color == "red":
                             print("Masuk state dtc_salah")
@@ -1576,16 +1569,16 @@ class App(ctk.CTk):
         self.serial_thread = threading.Thread(target=self.process_frames, daemon=True)
         self.serial_thread.start()
         self.update_serial() 
-        
+
     def update_serial(self):
         """Thread worker: Terus menerus membaca data dari serial dan menerjemahkannya."""
         self.x_s = 0
         self.y_s = 0
         self.z_s = 0
-        
+
         # ==================== BAGIAN YANG DIGANTI / DIPERBAIKI ====================
         data = None
-        
+
         # Cek apakah port serial terkonfigurasi dan dalam keadaan terbuka
         if hasattr(self, 'ser') and self.ser is not None and self.ser.is_open:
             try:
@@ -1606,7 +1599,7 @@ class App(ctk.CTk):
             if len(self.data_) >= 2:
                 val1 = int(self.data_[0])
                 val2 = int(self.data_[1])
-                
+
                 # if val1 <= 51 and val1 >= 43: # untuk sensor sebelah kiri
                 if 55 <= val1 <= 64: # untuk sensor sebelah kanan
                     print("1A")
@@ -1619,7 +1612,7 @@ class App(ctk.CTk):
                     self.x_s = 200
                     self.y_s = 350
                     self.z_s = 190  
-                # elif val1 <= 99 and val1 >= 91: # untuk sensor sebelah kiri              
+                # elif val1 <= 99 and val1 >= 91: # untuk sensor sebelah kiri
                 elif 11 <= val1 <= 19: # untuk sensor sebelah kanan
                     print("1B")
                     self.x_s = 515
@@ -1631,7 +1624,7 @@ class App(ctk.CTk):
                     self.x_s = 460
                     self.y_s = 350
                     self.z_s = 200                
-                
+
                 # val2 belum diperbaharui nilai sensornya
                 if 37 <= val2 <= 44:
                     print("2A")
@@ -1643,7 +1636,7 @@ class App(ctk.CTk):
                     self.x_s = 200
                     self.y_s = 250
                     self.z_s = 160
-                
+
                 print(f"Data: {data}")
         except (ValueError, IndexError) as e:
             print(f"Format data serial tidak valid ({data}): {e}")
@@ -1656,7 +1649,7 @@ class App(ctk.CTk):
         - Menangani logika benar/salah ambil (mirip dengan classify_pipe).
         """
         for label, coord in self.slot_data.items():
-            
+
             if St_Aruco_ == 1:
                 condition = (coord["x1"] <= x <= coord["x2"] and 
                             coord["y1"] <= y <= coord["y2"] and
@@ -1666,15 +1659,15 @@ class App(ctk.CTk):
                             coord["y1"] <= y <= coord["y2"])
 
             if condition:
-                
+
                 # Baca status warna LED dari cache (thread-safe), bukan dari widget langsung
                 current_color = self.led_color_cache.get(label, "gray")
-                
+
                 # Jika sistem aktif dan tidak pause
                 if self.system_started and not self.timer_paused and self.cycle_active:
                     if label not in self.detected_objects:
                         self.pic_time = datetime.datetime.now()
-                        #self.add_history_message(f"waktu ambil{self.pic_time}")
+                        # self.add_history_message(f"waktu ambil{self.pic_time}")
                         self.detected_objects.add(label)
                         # Sentuhan ke widget LED -> jadwalkan ke main thread
                         self.after(0, lambda l=label: self.update_led_color(l))
@@ -1708,7 +1701,7 @@ class App(ctk.CTk):
         """Menyimpan data final (waktu selesai, jumlah siklus) ke database."""
         if not self.db_process_id: return
         self.accumulation_total += self.current_cycle
-    
+
         # Perbarui juga tampilan di GUI agar langsung terlihat
         self.accumulation_entry.configure(state="normal") 
         self.accumulation_entry.delete(0, "end")
@@ -1716,13 +1709,13 @@ class App(ctk.CTk):
         self.accumulation_entry.configure(state="readonly")
         conn = get_db_connection()
         if not conn: print("DB connection failed."); return
-        
+
         try:
             cursor = conn.cursor()
             query = ("UPDATE logproses SET waktu_selesai=%s, timer=%s, durasi_detik=%s, sisa_bundle=%s, work_order=%s WHERE id=%s")
-            
+
             work_order = self.current_cycle
-        
+
             # HITUNG SISA SIKLUS DI SINI
             sisa_bundle = max(0, self.total_cycles - work_order)
 
@@ -1788,7 +1781,7 @@ class App(ctk.CTk):
             print(f"DB Log Detection Error: {e}")
         finally:
             if conn.is_connected(): cursor.close(); conn.close()
-        
+
     def run_django_server(self):
         """Menjalankan server Django sebagai proses terpisah."""
         print("Mencoba menghubungkan ke database untuk memeriksa status MariaDB...")
@@ -1809,21 +1802,21 @@ class App(ctk.CTk):
             return
 
         try:
-            #/home/berdikari/Documents/wireselection/Djangoberdikari/venv/bin
+            # /home/berdikari/Documents/wireselection/Djangoberdikari/venv/bin
             python_executable = "/home/berdikari/HandDetection/venv/bin/python"
             manage_py_path = "/home/berdikari/HandDetection/Djangoberdikari/dashboard_project/manage.py"
             command = [python_executable, manage_py_path, "runserver", "0.0.0.0:8000"]
-            
+
             # Pengecekan OS: Gunakan bendera Windows HANYA jika di Windows
             if IS_WINDOWS:
                 self.django_process = subprocess.Popen(command, creationflags=subprocess.CREATE_NO_WINDOW)
             else:
                 self.django_process = subprocess.Popen(command) # Linux tidak butuh bendera ini
-            
+
             self.update_status("Server sedang berjalan...")
             print("Server dimulai di latar belakang.")
             self.django_btn.configure(text="Stop Server", command=self.stop_django_server)
-            
+
         except Exception as e:
             self.update_status(f"Gagal memulai server: {e}")
             print(f"Error saat mencoba memulai server: {e}")
@@ -1868,7 +1861,7 @@ class App(ctk.CTk):
                 else:
                     # Perintah khusus Linux (kill) untuk menghentikan proses
                     subprocess.run(['kill', '-9', str(pid_to_kill)], check=True)
-                
+
                 self.update_status("Server berhasil dimatikan.")
                 print("Server telah dihentikan.")
             except Exception as e:
@@ -1882,7 +1875,7 @@ class App(ctk.CTk):
             self.update_status("Tidak ada server yang berjalan.")
             self.django_process = None
             self.django_btn.configure(text="Run Server", command=self.run_django_server)
-        
+
     def is_port_in_use(self, port: int):
         """Utility untuk memeriksa apakah port jaringan sedang digunakan."""
         import socket
@@ -1931,7 +1924,7 @@ class App(ctk.CTk):
             ).start()
         except Exception as e:
             print(f"[play_sound] Gagal memutar suara: {e}")
-        
+
     def update_status(self, text):
         """
         Memperbarui teks di kotak status.
@@ -1944,7 +1937,7 @@ class App(ctk.CTk):
             self.status_entry.insert(0, text)
             self.status_entry.configure(state="readonly")
         self.after(0, _do_update)
-        
+
     def add_history_message(self, message, delay=0, error_type=None):
         """
         Menambahkan pesan ke kotak histori.
@@ -1964,7 +1957,7 @@ class App(ctk.CTk):
                 tag_name = f"error_{self.error_tag_counter}"
                 self.error_tag_counter += 1
                 self.history_text.tag_add(tag_name, start_index, end_index)
-                
+
                 # Tentukan warna highlight berdasarkan tipe error
                 if error_type == 'red_slot':
                     highlight_color = "#FFA500"  # Oranye untuk slot merah
@@ -1972,33 +1965,33 @@ class App(ctk.CTk):
                     highlight_color = "#DB1514"  # Merah untuk slot abu-abu
                 else:
                     highlight_color = "#B6580C"  # Warna default jika tipe tidak spesifik
-                
+
                 # Highlight border history box
                 self.history_box.configure(border_color="red", border_width=3)
                 self.after(3000, self.reset_history_box_highlight)
-                
+
                 # Konfigurasi tag dan blinking
                 self.history_text.tag_config(tag_name, foreground="black", background=highlight_color)
                 self.blinking_tags[tag_name] = {"state": "active", "color": highlight_color}
-                
+
                 if not self.is_blinking_active:
                     self.is_blinking_active = True
                     self._blink_history_errors()
 
             self.history_text.configure(state="disabled")
             self.history_text.see("end")
-            
+
         # Selalu jadwalkan lewat self.after, baik delay 0 ataupun lebih,
         # supaya aman dipanggil dari thread background sekalipun.
         self.after(max(delay, 0), add_message)
-        
+
     def add_barcode_info(self, info):
         """Menampilkan informasi barcode di UI."""
         self.barcode_info_text.configure(state="normal")
         self.barcode_info_text.delete("1.0", "end")
         self.barcode_info_text.insert("end", info)
         self.barcode_info_text.configure(state="disabled")
-        
+
     def update_led_color(self, label):
         """
         Mengubah warna LED dari hijau ke merah setelah pengambilan benar.
@@ -2018,7 +2011,7 @@ class App(ctk.CTk):
                         self._set_led_color(led, label, "red")  # Ubah ke merah
                         success_msg = f"✅ Kabel {label} berhasil diambil - {datetime.datetime.now().strftime('%H:%M:%S')}"
                         self.ls_dtc = label
-                        #self.add_history_message(success_msg, 400)
+                        # self.add_history_message(success_msg, 400)
                         self.last_logged_error_slot = None
                         self.check_cycle_completion()
                         return # Tidak ada suara di sini
@@ -2046,7 +2039,7 @@ class App(ctk.CTk):
         self.timer_entry.configure(state="readonly")
         self.pause_btn.configure(text="Pause")
         self.start_btn.configure(state="normal")
-        
+
     def update_timer(self):
         """Dipanggil setiap detik untuk memperbarui tampilan timer."""
         if self.timer_running and not self.timer_paused:
@@ -2070,7 +2063,7 @@ class App(ctk.CTk):
         if not self.blinking:
             self.blinking = True
             self._blink()
-        
+
     def update_time(self):
         """Dipanggil setiap detik untuk memperbarui jam aktual."""
         try:
@@ -2112,26 +2105,26 @@ class App(ctk.CTk):
             # Tentukan warna untuk kedipan (merah atau oranye seperti history box)
             blink_color = "#DB1514" # Warna oranye yang sama dengan history error
             current_color = self.status_entry.cget("fg_color")
-            
+
             # Ganti warna antara warna asli dan warna kedip
             new_color = self.original_status_fg_color if current_color == blink_color else blink_color
-            
+
             self.status_entry.configure(fg_color=new_color)
-            
+
             # Jadwalkan untuk pemanggilan berikutnya
             self.after(500, self._blink_status_entry)
-        
+
     def _blink_status_for_selection(self):
         """Logika untuk kedip background status entry menjadi kuning saat pemilihan slot."""
         if self.is_status_blinking_selection:
             blink_color = "#E8C822" # Warna kuning keemasan
             current_color = self.status_entry.cget("fg_color")
-            
+
             # Ganti warna antara warna asli dan warna kedip
             new_color = self.original_status_fg_color_selection if current_color == blink_color else blink_color
-            
+
             self.status_entry.configure(fg_color=new_color)
-            
+
             # Jadwalkan pemanggilan berikutnya
             self.after(500, self._blink_status_for_selection)
 
@@ -2142,14 +2135,14 @@ class App(ctk.CTk):
 
     def clear_history(self):
         """Membersihkan kotak History dan mereset status error blinking."""
-         #Hentikan semua tag error yang sedang berkedip dan hapus datanya
+        # Hentikan semua tag error yang sedang berkedip dan hapus datanya
         self.blinking_tags.clear()
 
-        #Bersihkan teks di dalam history box
+        # Bersihkan teks di dalam history box
         self.history_text.configure(state="normal")
         self.history_text.delete("1.0", "end")
         self.history_text.configure(state="disabled")
-        
+
     def _blink_history_errors(self):
         """Logika untuk kedip background pesan error di histori."""
         default_bg = "#f0f0f0" 
@@ -2157,7 +2150,7 @@ class App(ctk.CTk):
         for tag, data in list(self.blinking_tags.items()):
             state = data["state"]
             color = data["color"]
-            
+
             if state == "active":
                 # Matikan sorotan: kembalikan ke latar belakang default
                 self.history_text.tag_config(tag, background=default_bg)
@@ -2196,7 +2189,7 @@ class App(ctk.CTk):
         mode = "dark" if self.is_dark_mode else "light"
         ctk.set_appearance_mode(mode)
         self.update_text_colors()
-        
+
     def set_error_delay_threshold(self, choice: str):
         """Callback yang dipicu saat pilihan delay diubah."""
         try:
@@ -2207,7 +2200,7 @@ class App(ctk.CTk):
         except ValueError:
             # This should not happen with predefined options, but it's safe to have
             print(f"Error: Could not convert '{choice}' to a float.")
-        
+
     def on_closing(self):
         """
         - Dipicu saat jendela aplikasi ditutup.
@@ -2222,7 +2215,7 @@ class App(ctk.CTk):
             self.serial_thread.join()
         if hasattr(self, 'cap') and self.cap is not None and self.cap.isOpened():
             self.cap.release()
-        
+
         # Hentikan semua scheduled events
         self.after_cancel(self._after_id) if hasattr(self, '_after_id') else None
         self.destroy()
