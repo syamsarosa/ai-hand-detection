@@ -1,4 +1,7 @@
 .venv
+.env
+.env.backup
+.env.production
 Djangoberdikari
 INSTALLATION
 NOTES
