@@ -30,6 +30,9 @@ from kalibrasi import JendelaKalibrasi
 
 from database.connection import connection as get_db_connection
 from database.repositories.log_process import create_process, finish_process
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
 
 def load_icon(path, size=(20, 20)):
     """Memuat file gambar untuk ikon."""
@@ -83,7 +86,7 @@ class App(ctk.CTk):
         self.camera_on = False
         self.cap = None
         #  self.model = YOLO(r'GUI/best2.engine', task='detect')#Blue.engine
-        self.model = YoloDetector(r'UiBerdikari/SRC/best2.pt', task='detect')
+        self.model = YoloDetector(BASE_DIR / "best2.pt", task='detect')
         self.ARUCO_DICT = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
         self.MARKER_SIZE = 5.0
         self.excel_file_path = r'/home/berdikari/HandDetection/UiBerdikari/Database/barcode_data.xlsx'
@@ -204,7 +207,7 @@ class App(ctk.CTk):
         try:
             logo_frame = tk.Frame(self.sidebar, bg="#d8ebff")
             logo_frame.pack(pady=20)
-            self.logo_img1 = Image.open("UiBerdikari/SRC/polteklogo.png").resize((110, 98))
+            self.logo_img1 = Image.open(BASE_DIR / "polteklogo.png").resize((110, 98))
             self.logo_photo1 = ImageTk.PhotoImage(self.logo_img1)
             logo1_label = tk.Label(logo_frame, image=self.logo_photo1, bg="#d8ebff")
             logo1_label.pack(side="left", padx=10)
@@ -217,18 +220,18 @@ class App(ctk.CTk):
             pass
 
         # Load icons
-        self.home_icon = load_icon("UiBerdikari/SRC/IMG/home.png")
-        self.info_icon = load_icon("UiBerdikari/SRC/IMG/info.png")
-        self.mode_icon = load_icon("UiBerdikari/SRC/IMG/mode.png")
-        self.start_icon = load_icon("UiBerdikari/SRC/IMG/start.png")
-        self.pause_icon = load_icon("UiBerdikari/SRC/IMG/pause.png")
-        self.reset_icon = load_icon("UiBerdikari/SRC/IMG/Reset.png")
-        self.camera_icon = load_icon("UiBerdikari/SRC/IMG/camera.png")
-        self.complete_icon = load_icon("UiBerdikari/SRC/IMG/complete.png")
-        self.server_icon = load_icon("UiBerdikari/SRC/IMG/server.png")
-        self.server_icon = load_icon("UiBerdikari/SRC/IMG/complete.png")
-        self.exit_icon = load_icon("UiBerdikari/SRC/IMG/exit.png")
-        self.cal_icon = load_icon("UiBerdikari/SRC/IMG/calibration.png")
+        self.home_icon = load_icon(BASE_DIR / "IMG/home.png")
+        self.info_icon = load_icon(BASE_DIR / "IMG/info.png")
+        self.mode_icon = load_icon(BASE_DIR / "IMG/mode.png")
+        self.start_icon = load_icon(BASE_DIR / "IMG/start.png")
+        self.pause_icon = load_icon(BASE_DIR / "IMG/pause.png")
+        self.reset_icon = load_icon(BASE_DIR / "IMG/Reset.png")
+        self.camera_icon = load_icon(BASE_DIR / "IMG/camera.png")
+        self.complete_icon = load_icon(BASE_DIR / "IMG/complete.png")
+        self.server_icon = load_icon(BASE_DIR / "IMG/server.png")
+        self.server_icon = load_icon(BASE_DIR / "IMG/complete.png")
+        self.exit_icon = load_icon(BASE_DIR / "IMG/exit.png")
+        self.cal_icon = load_icon(BASE_DIR / "IMG/calibration.png")
 
         # Navigation buttons
         self.home_btn = ctk.CTkButton(self.sidebar, text="Home", anchor="w", image=self.home_icon,
