@@ -2200,11 +2200,3 @@ class App(ctk.CTk):
         # Hentikan semua scheduled events
         self.after_cancel(self._after_id) if hasattr(self, '_after_id') else None
         self.destroy()
-
-# =============================================================================
-# BAGIAN C: TITIK MASUK APLIKASI
-# =============================================================================
-if __name__ == "__main__":
-    app = App()
-    app.protocol("WM_DELETE_WINDOW", app.on_closing)
-    app.mainloop()
