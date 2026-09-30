@@ -30,6 +30,7 @@ from kalibrasi import JendelaKalibrasi
 
 from database.connection import connection as get_db_connection
 from database.repositories.log_process import create_process, finish_process
+from database.repositories.log_detection import insert_error_detection
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -1749,22 +1750,7 @@ class App(ctk.CTk):
                 data_to_insert = self.db_log_queue.get(timeout=0.5)
             except queue.Empty:
                 continue
-            self._insert_log_error_to_db(data_to_insert)
-
-    def _insert_log_error_to_db(self, data_to_insert):
-        """Melakukan insert aktual ke tabel logdeteksi. Hanya dipanggil dari db_worker_thread."""
-        conn = get_db_connection()
-        if not conn: return
-        try:
-            cursor = conn.cursor()
-            query = ("INSERT INTO logdeteksi (id_proses, username, id_barcode, data_current, posisi_terdeteksi, kondisi, time_actual, timer) "
-                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
-            cursor.execute(query, data_to_insert)
-            conn.commit()
-        except Error as e:
-            print(f"DB Log Detection Error: {e}")
-        finally:
-            if conn.is_connected(): cursor.close(); conn.close()
+            insert_error_detection(data_to_insert)
 
     def run_django_server(self):
         """Menjalankan server Django sebagai proses terpisah."""
