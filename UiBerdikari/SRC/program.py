@@ -1531,7 +1531,7 @@ class App(ctk.CTk):
                             if label != self.last_logged_error_slot:
                                 warning_msg = f"⚠️ Peringatan: Objek terdeteksi di {label} (area seharusnya kosong) - {datetime.datetime.now().strftime('%H:%M:%S')}"
                                 self.last_logged_error_slot = label
-                                self.play_sound('buzzer.mp3')
+                                self.play_sound('AUDIO/buzzer.mp3')
                                 self.after(0, lambda m=warning_msg: self.add_history_message(m, error_type='gray_slot'))
                                 self.after(0, lambda l=label: self.log_error_detection_to_db(l))
 
@@ -1655,7 +1655,7 @@ class App(ctk.CTk):
                             selisih = now_time - self.pic_time
                             selisih_s = selisih.total_seconds()
                             if selisih_s > self.error_delay_threshold:
-                                self.play_sound('buzzer.mp3')
+                                self.play_sound('AUDIO/buzzer.mp3')
                                 warning_msg = f"⚠️ Peringatan: Objek terdeteksi di {label} (kabel sudah diambil) - {datetime.datetime.now().strftime('%H:%M:%S')}"
                                 self.pic_time = datetime.datetime.now()
                                 self.after(0, lambda m=warning_msg: self.add_history_message(m, error_type='red_slot'))
@@ -1664,7 +1664,7 @@ class App(ctk.CTk):
                             if label != self.last_logged_error_slot:
                                 warning_msg = f"⚠️ Peringatan: Objek terdeteksi di {label} (area seharusnya kosong) - {datetime.datetime.now().strftime('%H:%M:%S')}"
                                 self.last_logged_error_slot = label
-                                self.play_sound('buzzer.mp3')
+                                self.play_sound('AUDIO/buzzer.mp3')
                                 self.after(0, lambda m=warning_msg: self.add_history_message(m, error_type='gray_slot'))
                                 self.after(0, lambda l=label: self.log_error_detection_to_db(l))
 
