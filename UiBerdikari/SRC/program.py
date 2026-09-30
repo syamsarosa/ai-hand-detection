@@ -2,20 +2,15 @@
 # BAGIAN A: IMPORT & KONFIGURASI GLOBAL test
 # =============================================================================
 import threading
-import time
 import threading
 import queue
 import subprocess
 
-import sys
-import socket
 import os
 IS_WINDOWS = os.name == "nt"
 import re
-import serial
 import datetime
 import cv2
-import mysql.connector
 import customtkinter as ctk
 import tkinter as tk
 import tkinter.messagebox as messagebox
@@ -24,8 +19,6 @@ import numpy as np
 from PIL import Image, ImageTk
 from detection.yolo_detector import YoloDetector
 import pandas as pd
-from playsound import playsound
-from mysql.connector import Error
 from kalibrasi import JendelaKalibrasi
 
 from database.connection import connection as get_db_connection
@@ -34,7 +27,7 @@ from database.repositories.log_detection import insert_error_detection
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-
+print(BASE_DIR)
 def load_icon(path, size=(20, 20)):
     """Memuat file gambar untuk ikon."""
     try:
