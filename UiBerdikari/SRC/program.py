@@ -2,12 +2,9 @@
 # BAGIAN A: IMPORT & KONFIGURASI GLOBAL test
 # =============================================================================
 import threading
-import time
-import threading
 import queue
 import subprocess
 
-import sys
 import socket
 import os
 IS_WINDOWS = os.name == "nt"
@@ -15,7 +12,6 @@ import re
 import serial
 import datetime
 import cv2
-import mysql.connector
 import customtkinter as ctk
 import tkinter as tk
 import tkinter.messagebox as messagebox
@@ -24,8 +20,6 @@ import numpy as np
 from PIL import Image, ImageTk
 from detection.yolo_detector import YoloDetector
 import pandas as pd
-from playsound import playsound
-from mysql.connector import Error
 from kalibrasi import JendelaKalibrasi
 
 from database.connection import connection as get_db_connection
@@ -208,12 +202,12 @@ class App(ctk.CTk):
         try:
             logo_frame = tk.Frame(self.sidebar, bg="#d8ebff")
             logo_frame.pack(pady=20)
-            self.logo_img1 = Image.open(BASE_DIR / "polteklogo.png").resize((110, 98))
+            self.logo_img1 = Image.open(BASE_DIR / "IMG/polteklogo.png").resize((110, 98))
             self.logo_photo1 = ImageTk.PhotoImage(self.logo_img1)
             logo1_label = tk.Label(logo_frame, image=self.logo_photo1, bg="#d8ebff")
             logo1_label.pack(side="left", padx=10)
 
-            self.logo_img2 = Image.open("UiBerdikari/SRC/sbilogo.png").resize((110, 98))
+            self.logo_img2 = Image.open(BASE_DIR / "IMG/sbilogo.png").resize((110, 98))
             self.logo_photo2 = ImageTk.PhotoImage(self.logo_img2)
             logo1_label = tk.Label(logo_frame, image=self.logo_photo2, bg="#d8ebff")
             logo1_label.pack(side="left", padx=10)
@@ -230,7 +224,6 @@ class App(ctk.CTk):
         self.camera_icon = load_icon(BASE_DIR / "IMG/camera.png")
         self.complete_icon = load_icon(BASE_DIR / "IMG/complete.png")
         self.server_icon = load_icon(BASE_DIR / "IMG/server.png")
-        self.server_icon = load_icon(BASE_DIR / "IMG/complete.png")
         self.exit_icon = load_icon(BASE_DIR / "IMG/exit.png")
         self.cal_icon = load_icon(BASE_DIR / "IMG/calibration.png")
 
@@ -617,7 +610,7 @@ class App(ctk.CTk):
 
         try:
             # Load and resize the first landscape image (smaller width for side-by-side)
-            landscape_img1 = Image.open("UiBerdikari/SRC/Flowalat.png")
+            landscape_img1 = Image.open(BASE_DIR / "IMG/Flowalat.png")
             landscape_img1 = landscape_img1.resize((680, 400), Image.LANCZOS)  # Reduced width
             landscape_photo1 = ImageTk.PhotoImage(landscape_img1)
 
@@ -643,7 +636,7 @@ class App(ctk.CTk):
 
         try:
             # Load and resize the second landscape image (same size as first)
-            landscape_img2 = Image.open("UiBerdikari/SRC/Flowalat2.png")
+            landscape_img2 = Image.open(BASE_DIR / "IMG/Flowalat2.png")
             landscape_img2 = landscape_img2.resize((680, 400), Image.LANCZOS)  # Same dimensions
             landscape_photo2 = ImageTk.PhotoImage(landscape_img2)
 
@@ -1529,7 +1522,7 @@ class App(ctk.CTk):
                             selisih_s = selisih.total_seconds()
                             self.last_logged_error_slot = label
                             if selisih_s > self.error_delay_threshold:
-                                self.play_sound('buzzer.mp3')
+                                self.play_sound('AUDIO/buzzer.mp3')
                                 warning_msg = f"⚠️ Peringatan: Objek terdeteksi di {label} (kabel sudah diambil) - {datetime.datetime.now().strftime('%H:%M:%S')}"
                                 self.pic_time = datetime.datetime.now()
                                 self.after(0, lambda m=warning_msg: self.add_history_message(m, error_type='red_slot'))
