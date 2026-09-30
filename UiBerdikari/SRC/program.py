@@ -27,7 +27,7 @@ from database.repositories.log_detection import insert_error_detection
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
-print(BASE_DIR)
+
 def load_icon(path, size=(20, 20)):
     """Memuat file gambar untuk ikon."""
     try:
@@ -206,7 +206,7 @@ class App(ctk.CTk):
             logo1_label = tk.Label(logo_frame, image=self.logo_photo1, bg="#d8ebff")
             logo1_label.pack(side="left", padx=10)
 
-            self.logo_img2 = Image.open("UiBerdikari/SRC/sbilogo.png").resize((110, 98))
+            self.logo_img2 = Image.open(BASE_DIR / "sbilogo.png").resize((110, 98))
             self.logo_photo2 = ImageTk.PhotoImage(self.logo_img2)
             logo1_label = tk.Label(logo_frame, image=self.logo_photo2, bg="#d8ebff")
             logo1_label.pack(side="left", padx=10)
@@ -214,18 +214,18 @@ class App(ctk.CTk):
             pass
 
         # Load icons
-        self.home_icon = load_icon(BASE_DIR / "IMG/home.png")
-        self.info_icon = load_icon(BASE_DIR / "IMG/info.png")
-        self.mode_icon = load_icon(BASE_DIR / "IMG/mode.png")
-        self.start_icon = load_icon(BASE_DIR / "IMG/start.png")
-        self.pause_icon = load_icon(BASE_DIR / "IMG/pause.png")
-        self.reset_icon = load_icon(BASE_DIR / "IMG/Reset.png")
-        self.camera_icon = load_icon(BASE_DIR / "IMG/camera.png")
-        self.complete_icon = load_icon(BASE_DIR / "IMG/complete.png")
-        self.server_icon = load_icon(BASE_DIR / "IMG/server.png")
-        self.server_icon = load_icon(BASE_DIR / "IMG/complete.png")
-        self.exit_icon = load_icon(BASE_DIR / "IMG/exit.png")
-        self.cal_icon = load_icon(BASE_DIR / "IMG/calibration.png")
+        self.home_icon = load_icon(BASE_DIR / "IMG" / "home.png")
+        self.info_icon = load_icon(BASE_DIR / "IMG" / "info.png")
+        self.mode_icon = load_icon(BASE_DIR / "IMG" / "mode.png")
+        self.start_icon = load_icon(BASE_DIR / "IMG" / "start.png")
+        self.pause_icon = load_icon(BASE_DIR / "IMG" / "pause.png")
+        self.reset_icon = load_icon(BASE_DIR / "IMG" / "Reset.png")
+        self.camera_icon = load_icon(BASE_DIR / "IMG" / "camera.png")
+        self.complete_icon = load_icon(BASE_DIR / "IMG" / "complete.png")
+        self.server_icon = load_icon(BASE_DIR / "IMG" / "server.png")
+        self.server_icon = load_icon(BASE_DIR / "IMG" / "complete.png")
+        self.exit_icon = load_icon(BASE_DIR / "IMG" / "exit.png")
+        self.cal_icon = load_icon(BASE_DIR / "IMG" / "calibration.png")
 
         # Navigation buttons
         self.home_btn = ctk.CTkButton(self.sidebar, text="Home", anchor="w", image=self.home_icon,
@@ -610,7 +610,7 @@ class App(ctk.CTk):
 
         try:
             # Load and resize the first landscape image (smaller width for side-by-side)
-            landscape_img1 = Image.open("UiBerdikari/SRC/Flowalat.png")
+            landscape_img1 = Image.open(BASE_DIR / "Flowalat.png")
             landscape_img1 = landscape_img1.resize((680, 400), Image.LANCZOS)  # Reduced width
             landscape_photo1 = ImageTk.PhotoImage(landscape_img1)
 
@@ -636,7 +636,7 @@ class App(ctk.CTk):
 
         try:
             # Load and resize the second landscape image (same size as first)
-            landscape_img2 = Image.open("UiBerdikari/SRC/Flowalat2.png")
+            landscape_img2 = Image.open(BASE_DIR / "Flowalat2.png")
             landscape_img2 = landscape_img2.resize((680, 400), Image.LANCZOS)  # Same dimensions
             landscape_photo2 = ImageTk.PhotoImage(landscape_img2)
 
@@ -1872,8 +1872,7 @@ class App(ctk.CTk):
         agar tidak error meski program dijalankan dari direktori berbeda.
         """
         try:
-            base = os.path.dirname(os.path.abspath(__file__))
-            path_to_sound = os.path.join(base, sound_file)
+            path_to_sound = os.path.join(BASE_DIR, sound_file)
             if not os.path.exists(path_to_sound):
                 print(f"[play_sound] File tidak ditemukan: {path_to_sound}")
                 return
