@@ -29,6 +29,7 @@ from mysql.connector import Error
 from kalibrasi import JendelaKalibrasi
 
 from database.connection import connection as get_db_connection
+from database.repositories.log_process import create_process, finish_process
 
 def load_icon(path, size=(20, 20)):
     """Memuat file gambar untuk ikon."""
@@ -898,20 +899,18 @@ class App(ctk.CTk):
             self.wire_info_entries[1].configure(state="readonly")
 
             # Simpan data awal ke DB
-            conn = get_db_connection()
-            if conn is None: self.update_status("Koneksi Database Gagal!"); return
-            try:
-                cursor = conn.cursor()
-                query = ("INSERT INTO logproses (user, id_barcode, data_current, remaining, waktu_mulai, total_work_order) "
-                         "VALUES (%s, %s, %s, %s, %s, %s)")
-                data_to_insert = (user_name, barcode, str(wire_t), wire_bndle_qty, datetime.datetime.now(), self.plan_work_order)
-                cursor.execute(query, data_to_insert)
-                conn.commit()
-                self.db_process_id = cursor.lastrowid
-            except Error as e:
-                self.update_status(f"DB Error: {e}"); print(f"DB Error: {e}"); return
-            finally:
-                if conn.is_connected(): cursor.close(); conn.close()
+            self.db_process_id = create_process(
+                user=user_name,
+                barcode=barcode,
+                data_current=str(wire_t),
+                remaining=wire_bndle_qty,
+                waktu_mulai=datetime.datetime.now(),
+                total_work_order=self.plan_work_order
+            )
+
+            if self.db_process_id is None:
+                self.update_status("Koneksi Database Gagal!")
+                return
 
             # Set the range based on wire_t (1 to wire_t)
             # self.current_start = 1
@@ -1688,27 +1687,28 @@ class App(ctk.CTk):
         self.accumulation_entry.delete(0, "end")
         self.accumulation_entry.insert(0, str(self.accumulation_total))
         self.accumulation_entry.configure(state="readonly")
-        conn = get_db_connection()
-        if not conn: print("DB connection failed."); return
 
-        try:
-            cursor = conn.cursor()
-            query = ("UPDATE logproses SET waktu_selesai=%s, timer=%s, durasi_detik=%s, sisa_bundle=%s, work_order=%s WHERE id=%s")
+        work_order = self.current_cycle
+        sisa_bundle = max(0, self.total_cycles - work_order)
 
-            work_order = self.current_cycle
+        success = finish_process(
+            process_id=self.db_process_id,
+            waktu_selesai=datetime.datetime.now(),
+            timer=self.timer_entry.get(),
+            durasi_detik=int(self.elapsed_time),
+            sisa_bundle=sisa_bundle,
+            work_order=work_order
+        )
 
-            # HITUNG SISA SIKLUS DI SINI
-            sisa_bundle = max(0, self.total_cycles - work_order)
+        if success:
+            print(
+                f"Proses DB ID {self.db_process_id} "
+                f"difinalisasi dengan counter: {work_order}."
+            )
+        else:
+            print("DB Update Error.")
 
-            data_to_update = (datetime.datetime.now(), self.timer_entry.get(), int(self.elapsed_time), sisa_bundle, work_order, self.db_process_id)
-            cursor.execute(query, data_to_update)
-            conn.commit()
-            print(f"Proses DB ID {self.db_process_id} difinalisasi dengan counter: {work_order}.")
-        except Error as e:
-            print(f"DB Update Error: {e}")
-        finally:
-            if conn.is_connected(): cursor.close(); conn.close()
-            self.db_process_id = None
+        self.db_process_id = None
 
     def log_error_detection_to_db(self, posisi):
         """
