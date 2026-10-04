@@ -200,7 +200,7 @@ class App(ctk.CTk):
         try:
             logo_frame = tk.Frame(self.sidebar, bg="#d8ebff")
             logo_frame.pack(pady=20)
-            self.logo_img1 = Image.open(BASE_DIR / "polteklogo.png").resize((110, 98))
+            self.logo_img1 = Image.open(BASE_DIR / "IMG/polteklogo.png").resize((110, 98))
             self.logo_photo1 = ImageTk.PhotoImage(self.logo_img1)
             logo1_label = tk.Label(logo_frame, image=self.logo_photo1, bg="#d8ebff")
             logo1_label.pack(side="left", padx=10)
@@ -1450,7 +1450,7 @@ class App(ctk.CTk):
                             selisih_s = selisih.total_seconds()
                             self.last_logged_error_slot = label
                             if selisih_s > self.error_delay_threshold:
-                                self.play_sound('buzzer.mp3')
+                                self.play_sound('AUDIO/buzzer.mp3')
                                 warning_msg = f"⚠️ Peringatan: Objek terdeteksi di {label} (kabel sudah diambil) - {datetime.datetime.now().strftime('%H:%M:%S')}"
                                 self.pic_time = datetime.datetime.now()
                                 self.after(0, lambda m=warning_msg: self.add_history_message(m, error_type='red_slot'))
@@ -1459,7 +1459,7 @@ class App(ctk.CTk):
                             if label != self.last_logged_error_slot:
                                 warning_msg = f"⚠️ Peringatan: Objek terdeteksi di {label} (area seharusnya kosong) - {datetime.datetime.now().strftime('%H:%M:%S')}"
                                 self.last_logged_error_slot = label
-                                self.play_sound('buzzer.mp3')
+                                self.play_sound('AUDIO/buzzer.mp3')
                                 self.after(0, lambda m=warning_msg: self.add_history_message(m, error_type='gray_slot'))
                                 self.after(0, lambda l=label: self.log_error_detection_to_db(l))
 
@@ -1583,7 +1583,7 @@ class App(ctk.CTk):
                             selisih = now_time - self.pic_time
                             selisih_s = selisih.total_seconds()
                             if selisih_s > self.error_delay_threshold:
-                                self.play_sound('buzzer.mp3')
+                                self.play_sound('AUDIO/buzzer.mp3')
                                 warning_msg = f"⚠️ Peringatan: Objek terdeteksi di {label} (kabel sudah diambil) - {datetime.datetime.now().strftime('%H:%M:%S')}"
                                 self.pic_time = datetime.datetime.now()
                                 self.after(0, lambda m=warning_msg: self.add_history_message(m, error_type='red_slot'))
@@ -1592,7 +1592,7 @@ class App(ctk.CTk):
                             if label != self.last_logged_error_slot:
                                 warning_msg = f"⚠️ Peringatan: Objek terdeteksi di {label} (area seharusnya kosong) - {datetime.datetime.now().strftime('%H:%M:%S')}"
                                 self.last_logged_error_slot = label
-                                self.play_sound('buzzer.mp3')
+                                self.play_sound('AUDIO/buzzer.mp3')
                                 self.after(0, lambda m=warning_msg: self.add_history_message(m, error_type='gray_slot'))
                                 self.after(0, lambda l=label: self.log_error_detection_to_db(l))
 

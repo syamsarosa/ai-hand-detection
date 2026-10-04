@@ -21,9 +21,7 @@ psutil==7.2.2
 pyserial==3.5
 pandas==3.0.5
 openpyxl==3.1.5
-playsound==1.2.2
 python-dotenv
 
-django
 google-genai
 pytz
