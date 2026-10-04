@@ -22,6 +22,7 @@ import pandas as pd
 from kalibrasi import JendelaKalibrasi
 
 from detection.camera import Camera
+from detection.aruco_detector import ArucoDetector
 from database.connection import connection as get_db_connection
 from database.repositories.log_process import create_process, finish_process
 from database.repositories.log_detection import insert_error_detection
@@ -87,20 +88,18 @@ class App(ctk.CTk):
         self.excel_file_user = r'/home/berdikari/HandDetection/UiBerdikari/DataUser/data_user.xlsx'
         self.django_process = None
 
-        # Inisialisasi Aruco API baru
-        self.ARUCO_DICT = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_16h5)#DICT_APRILTAG_36h11  #DICT_4X4_50
-        self.ARUCO_PARAMETERS = cv2.aruco.DetectorParameters()
-        self.ARUCO_PARAMETERS.adaptiveThreshWinSizeMin = 5
-        self.ARUCO_PARAMETERS.adaptiveThreshWinSizeMax = 23
-        self.ARUCO_PARAMETERS.adaptiveThreshWinSizeStep = 5
-        self.ARUCO_PARAMETERS.minMarkerPerimeterRate = 0.08
-        self.ARUCO_PARAMETERS.maxMarkerPerimeterRate = 4.0
-        self.ARUCO_PARAMETERS.minCornerDistanceRate = 0.05
-        self.ARUCO_PARAMETERS.minOtsuStdDev = 5.0
-        self.ARUCO_PARAMETERS.polygonalApproxAccuracyRate = 0.03
-        self.ARUCO_PARAMETERS.minMarkerDistanceRate = 0.05
+        # Initialize camera calibration
+        self.camera_matrix = np.array(
+            [[800, 0, 320], [0, 800, 240], [0, 0, 1]], dtype=np.float32
+        )
+        self.dist_coeffs = np.zeros((5, 1))
 
-        self.ARUCO_DETECTOR = cv2.aruco.ArucoDetector(self.ARUCO_DICT, self.ARUCO_PARAMETERS)
+        # ArUco detection is now delegated to ArucoDetector.
+        self.aruco_detector = ArucoDetector(
+            camera_matrix=self.camera_matrix,
+            dist_coeffs=self.dist_coeffs,
+            marker_size=self.MARKER_SIZE,
+        )
 
         # Variabel untuk logika anti-duplikat
         self.last_detected_slot = None
@@ -131,12 +130,6 @@ class App(ctk.CTk):
         self.db_log_queue = queue.Queue()
         self.db_worker_thread = threading.Thread(target=self._db_worker_loop, daemon=True)
         self.db_worker_thread.start()
-
-        # Initialize camera calibration
-        self.camera_matrix = np.array([[800, 0, 320],
-                                     [0, 800, 240],
-                                     [0, 0, 1]], dtype=np.float32)
-        self.dist_coeffs = np.zeros((5, 1))
 
         # System state
         self.system_started = False
@@ -1262,68 +1255,76 @@ class App(ctk.CTk):
                 # Process frame
                 processed_frame = frame.copy()
 
-                # self.classify_pipe(0, 0, 0, processed_frame, 0, 0, St_Aruco, self.data_)
-
                 St_Aruco = 0  # initial aruco status
 
                 # Process with YOLO
                 results = self.model.predict(frame)
-                yolo_boxes = []  # list of (x1, y1, x2, y2) hasil deteksi YOLO (koordinat piksel)
+                yolo_boxes = []
+
                 if len(results):
                     processed_frame = results[0].plot()
+
                     if results[0].boxes is not None and len(results[0].boxes) > 0:
                         for box in results[0].boxes.xyxy.cpu().numpy():
                             bx1, by1, bx2, by2 = box[:4]
-                            yolo_boxes.append((float(bx1), float(by1), float(bx2), float(by2)))
+                            yolo_boxes.append(
+                                (
+                                    float(bx1),
+                                    float(by1),
+                                    float(bx2),
+                                    float(by2),
+                                )
+                            )
 
-                # Process with ArUco
-                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                # corners, ids, rejected = aruco.detectMarkers(gray, self.ARUCO_DICT)
-                corners, ids, rejected = self.ARUCO_DETECTOR.detectMarkers(gray)
+                # Process with ArUco.
+                # Detection, pose calculation, center/distance calculation,
+                # and ArUco drawing are handled by ArucoDetector.
+                detections = self.aruco_detector.detect(
+                    frame,
+                    processed_frame,
+                )
 
-                if ids is not None:
+                if detections:
                     St_Aruco = 1  # ArUco detected
-                    self.classify_pipe_sensor(self.x_s, self.y_s, self.z_s, processed_frame, 0, 0, St_Aruco)
 
-                    for corner, marker_id in zip(corners, ids.flatten()):
+                    self.classify_pipe_sensor(
+                        self.x_s,
+                        self.y_s,
+                        self.z_s,
+                        processed_frame,
+                        0,
+                        0,
+                        St_Aruco,
+                    )
 
-                        half_size = self.MARKER_SIZE / 2.0
-                        obj_points = np.array([
-                            [-half_size,  half_size, 0],
-                            [ half_size,  half_size, 0],
-                            [ half_size, -half_size, 0],
-                            [-half_size, -half_size, 0]
-                        ], dtype=np.float32)
+                    for detection in detections:
+                        x_c = detection["x"]
+                        y_c = detection["y"]
+                        distance = detection["distance"]
 
-                        # Hitung pose rvec dan tvec menggunakan solvePnP
-                        success, rvec, tvec = cv2.solvePnP(
-                            obj_points, corner, self.camera_matrix, self.dist_coeffs, flags=cv2.SOLVEPNP_IPPE_SQUARE
+                        # Application logic remains in App.
+                        # classify_pipe() combines the ArUco result
+                        # with the YOLO bounding boxes.
+                        self.classify_pipe(
+                            x_c,
+                            y_c,
+                            distance,
+                            processed_frame,
+                            x_c,
+                            y_c,
+                            St_Aruco,
+                            yolo_boxes,
                         )
-
-                        if success:
-                            aruco.drawDetectedMarkers(processed_frame, [corner])
-                            cv2.drawFrameAxes(processed_frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 2)
-
-                        aruco.drawDetectedMarkers(processed_frame, [corner])
-                        cv2.drawFrameAxes(processed_frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, 2)
-
-                        x_c = int(np.mean(corner[0][:, 0]))
-                        y_c = int(np.mean(corner[0][:, 1]))
-                        distance = np.linalg.norm(tvec)
-
-                        self.classify_pipe(x_c, y_c, distance, processed_frame, x_c, y_c, St_Aruco, yolo_boxes)
-
-                        text = f"x:{x_c} y:{y_c} Dist:{distance:.2f} cm"
-                        text_size, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
-                        text_x = int(corner[0][0][0]) - text_size[0] - 10
-                        text_y = int(corner[0][0][1]) - 10
-                        text_x = max(text_x, 0)
-                        cv2.putText(processed_frame, text, (text_x, text_y),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
                 # Draw slot rectangles
                 for label, coord in self.slot_data.items():
-                    cv2.rectangle(processed_frame, (coord["x1"], coord["y1"]), (coord["x2"], coord["y2"]),(216, 235, 255), 3)
+                    cv2.rectangle(
+                        processed_frame,
+                        (coord["x1"], coord["y1"]),
+                        (coord["x2"], coord["y2"]),
+                        (216, 235, 255),
+                        3,
+                    )
 
                 # Put processed frame in result queue
                 if self.result_queue.empty():
