@@ -21,6 +21,7 @@ from detection.yolo_detector import YoloDetector
 import pandas as pd
 from kalibrasi import JendelaKalibrasi
 
+from detection.camera import Camera
 from database.connection import connection as get_db_connection
 from database.repositories.log_process import create_process, finish_process
 from database.repositories.log_detection import insert_error_detection
@@ -78,7 +79,6 @@ class App(ctk.CTk):
         self.paused_time = 0
         self.elapsed_time = 0
         self.camera_on = False
-        self.cap = None
         #  self.model = YOLO(r'GUI/best2.engine', task='detect')#Blue.engine
         self.model = YoloDetector(BASE_DIR / "best2.pt", task='detect')
         self.ARUCO_DICT = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
@@ -114,12 +114,11 @@ class App(ctk.CTk):
         self.original_status_fg_color_selection = None # Untuk menyimpan warna asli status bar
 
         # Threading variables
-        self.camera_thread = None
         self.detection_thread = None
         self.serial_thread = None
         self.stop_event = threading.Event()
-        self.frame_queue = queue.Queue(maxsize=1)
         self.result_queue = queue.Queue(maxsize=1)
+        self.camera = Camera(self.stop_event)
 
         # --- Thread-safety helpers ---
         # Cache warna LED, dibaca dari detection_thread (background) agar
@@ -1206,38 +1205,15 @@ class App(ctk.CTk):
     def toggle_camera(self):
         """Menyalakan atau mematikan stream kamera dan thread terkait."""
         if self.camera_on:
-
             self.stop_event.set()
 
-            if self.camera_thread and self.camera_thread.is_alive():
-                self.camera_thread.join(timeout=1.0)
-            """
-            if self.camera_thread.is_alive():  # Jika thread masih hidup setelah timeout
-                self.camera_thread.terminate()  # atau handle khusus
-            if self.camera_thread is not None:
-                self.camera_thread.join()
-            if self.detection_thread is not None:
-                self.detection_thread.join()
-            if self.serial_thread is not None:
-                self.serial_thread.join()
-            
-            if self.cap is not None and self.cap.isOpened():
-                self.cap.release()
-            self.camera_on = False
-            self.camera_btn.configure(text="Start Camera")
-            self.camera_label.pack_forget()
-            self.camera_placeholder.pack(expand=True)
-            """
+            self.camera.stop()
             self.camera_on = False
             self.camera_btn.configure(text="Start Camera")
             self.camera_label.pack_forget()
             self.camera_placeholder.pack(expand=True)
 
-            if self.cap: #is not None and self.cap.isOpened():
-                self.cap.release()
-                self.cap = None
-                print("Kamera dimatikan")
-
+            print("Kamera dimatikan")
             self.update_status("Camera OFF")
         else:
             self.stop_event.clear()
@@ -1258,12 +1234,7 @@ class App(ctk.CTk):
     def init_camera(self):
         """Inisialisasi objek VideoCapture di thread terpisah."""
         try:
-            self.cap = cv2.VideoCapture(0)
-            if self.cap.isOpened():
-                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 720) #640
-                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480) #480
-                self.cap.set(cv2.CAP_PROP_FPS, 120)#dari 120 FPS
-
+            if self.camera.start():
                 # Update GUI dari main thread
                 self.after(0, lambda: [
                     self.set_camera_state(True),
@@ -1276,60 +1247,17 @@ class App(ctk.CTk):
             self.after(0, lambda: self.update_status(f"Camera Error: {str(e)}"))
 
     def start_camera_threads(self):
-        """Memulai thread untuk capture_frames dan process_frames."""
-        self.camera_thread = threading.Thread(target=self.capture_frames, daemon=True)
-        self.camera_thread.start()
-
+        """Memulai thread untuk process_frames."""
         self.detection_thread = threading.Thread(target=self.process_frames, daemon=True)
         self.detection_thread.start()
-
         self.update_camera_display()
-
-    def capture_frames(self):
-        """Thread worker: Terus menerus mengambil frame dari kamera."""
-        while not self.stop_event.is_set() and self.camera_on:
-            ret, frame = self.cap.read()
-            if ret:
-
-                # Terapkan koreksi distorsi fisheye pada frame
-                frame = cv2.flip(frame, -1)
-                h, w = frame.shape[:2]
-                fx_val = 0.89#1.17
-                k1_val = -0.34#-0.52  # Adjust this value for barrel distortion
-                k2_val = 0.49#0.16  # Adjust this value for barrel distortion    
-
-                fx = w  *max(fx_val, 0.1)  # Ensure fx is not too small
-                fy = fx  # Keep aspect ratio
-                cx = w / 2.00
-                cy = h / 2.00
-
-                K = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float64)
-                D = np.array([k1_val, k2_val, 0.0, 0.0], dtype=np.float64)
-
-                try:
-
-                    # Hitung matriks koreksi
-                    new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(
-                        K, D, (w, h), np.eye(3), balance=0.5
-                    )
-                    map1, map2 = cv2.fisheye.initUndistortRectifyMap(
-                        K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2
-                    )
-
-                    # Terapkan koreksi pada frame realtime
-                    frame = cv2.remap(frame, map1, map2, interpolation=cv2.INTER_LINEAR)
-
-                    if self.frame_queue.empty():
-                        self.frame_queue.put(frame)
-                except queue.Full:
-                    pass
 
     def process_frames(self):
         """Thread worker: Memproses frame untuk deteksi ArUco/YOLO."""
         while not self.stop_event.is_set() and self.camera_on:
 
             try:
-                frame = self.frame_queue.get(timeout=0.01)
+                frame = self.camera.get(timeout=0.01)
 
                 # Process frame
                 processed_frame = frame.copy()
@@ -2166,17 +2094,13 @@ class App(ctk.CTk):
     def on_closing(self):
         """
         - Dipicu saat jendela aplikasi ditutup.
-        - Memastikan semua thread dan proses berhenti dengan aman.
         """
         self.stop_event.set()
-        if self.camera_thread is not None:
-            self.camera_thread.join()
+        self.camera.stop()
         if self.detection_thread is not None:
             self.detection_thread.join()
         if self.serial_thread is not None:
             self.serial_thread.join()
-        if hasattr(self, 'cap') and self.cap is not None and self.cap.isOpened():
-            self.cap.release()
 
         # Hentikan semua scheduled events
         self.after_cancel(self._after_id) if hasattr(self, '_after_id') else None
